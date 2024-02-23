@@ -1,0 +1,22 @@
+type Member {
+    id: ID!
+    email: String
+    password: String
+}
+
+input MemberInput {
+    email: String
+    password: String
+}
+
+
+type Query {
+    getAllMembers: [Member]
+    getMemberById(id: ID): Member
+}
+
+type Mutation {
+    addMember(memberInput: MemberInput): Member
+    deleteMemberById(id: ID): Member
+    updateMember(id: ID, memberInput: MemberInput): Member
+}
