@@ -19,15 +19,15 @@ public class MemberService {
                 .switchIfEmpty(MonoOperator.error(new IllegalArgumentException("No Member found!")));
     }
 
-    public Mono<Object> addComputer(MemberInput memberInput) {
+    public Mono<Object> addMember(MemberInput memberInput) {
         String email = memberInput.getEmail();
         return this.memberRepository.findByEmail(email)
                 .flatMap(existingMember -> Mono.error(new IllegalArgumentException("Member with address " + email + " already exists")))
                 .switchIfEmpty(memberRepository.save(new Member(memberInput)));
     }
 
-    public Mono<Member> deleteComputerById(Integer id) {
-        return getComputerById(id)
+    public Mono<Member> deleteMemberById(Integer id) {
+        return getMemberById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Book not found with id : " + id)))
                 .map(member -> {
                     this.memberRepository.deleteById(id).subscribe();
@@ -35,17 +35,17 @@ public class MemberService {
                 });
     }
 
-    public Mono<Member> updateComputer(Integer id, MemberInput memberInput) {
+    public Mono<Member> updateMember(Integer id, MemberInput memberInput) {
         return this.memberRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Book not found with id : " + id)))
                 .flatMap(member -> {
-                    member.setEmail(member.getEmail());
+                    member.setEmail(memberInput.getEmail());
                     member.setPassword(memberInput.getPassword());
                     return this.memberRepository.save(member);
                 });
     }
 
-    public Mono<Member> getComputerById(Integer id) {
+    public Mono<Member> getMemberById(Integer id) {
         return this.memberRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Member not found with id : " + id)));
     }

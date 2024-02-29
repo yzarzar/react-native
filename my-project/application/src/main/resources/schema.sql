@@ -1,5 +1,3 @@
-use
-application;
 
 CREATE TABLE member
 (

@@ -1,15 +1,39 @@
 import * as React from "react";
 import {
   Alert,
-  Button,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { ADD_MEMBER, GET_MEMBERS } from "./quries";
+import { useMutation, useQuery } from "@apollo/client";
 
 export default function HomeScreen() {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [addMember] = useMutation(ADD_MEMBER);
+  const { refetch } = useQuery(GET_MEMBERS);
+
+  const handleAddMember = () => {
+    addMember({
+      variables: {
+        email: email,
+        password: password,
+      },
+    })
+      .then(() => {
+        refetch();
+        Alert.alert("Member added successfully. Check your members =>");
+        setEmail("");
+        setPassword("");
+      })
+      .catch((error) => {
+        Alert.alert("Error adding member : " + error.message);
+      });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
@@ -20,18 +44,17 @@ export default function HomeScreen() {
           <TextInput
             style={styles.input}
             placeholder="Enter your email"
-            // keyboardType="text"
+            value={email}
+            onChangeText={(text) => setEmail(text)}
           ></TextInput>
           <TextInput
             style={styles.input}
             placeholder="Enter your password"
-            // keyboardType="text"
+            value={password}
+            onChangeText={(text) => setPassword(text)}
           ></TextInput>
         </View>
-        <Pressable
-          style={styles.button}
-          onPress={() => Alert.alert("The button pressed")}
-        >
+        <Pressable style={styles.button} onPress={handleAddMember}>
           <Text style={styles.text}>Add me</Text>
         </Pressable>
       </View>

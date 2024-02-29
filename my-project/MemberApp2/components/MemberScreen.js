@@ -1,89 +1,139 @@
-import React, { Component } from "react";
-import { StyleSheet, Text, View, SafeAreaView } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  FlatList,
+  TouchableOpacity,
+  Modal
+} from "react-native";
+// import { useNavigation } from '@react-navigation/native';
 import FontAwesome from "react-native-vector-icons/FontAwesome";
-import { gql, useQuery } from "@apollo/client";
-import Loading from "./Loading";
+import { useMutation, useQuery } from "@apollo/client";
+import { GET_MEMBERS, DELETE_MEMBER_BY_ID } from "./quries";
+import UpdateForm from "./UpdateForm";
 
-const GET_ALL_MEMBERS = gql`
-  query GetAllMembers {
-    getAllMembers {
-      id
-      email
-      password
-    }
-  }
-`;
+const MemberScreen = () => {
+  const { loading, error, data, refetch } = useQuery(GET_MEMBERS);
+  const [deleteMemberById] = useMutation(DELETE_MEMBER_BY_ID);
+  const [previousData, setPreviousData] = useState(null);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [isUpdateModalVisible, setUpdateModalVisible] = useState(false);
+  
 
-export class MemberScreen extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      loading: true,
-      error: null,
-      members: []
-    };
-  }
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     refetch();
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, [refetch]);
 
-  fetchMembers = async () => {
-    try {
-      const response = await this.props.client.query({
-        query: GET_ALL_MEMBERS,
-      });
-      this.setState({
-        loading: false,
-        members: response.data.getAllMembers,
-      });
-    } catch (error) {
-      this.setState({
-        loading: false,
-        error: error.message,
-      });
-    }
-  };
+  // useEffect(() => {
+  //   if (
+  //     data &&
+  //     previousData &&
+  //     JSON.stringify(data) != JSON.stringify(previousData)
+  //   ) {
+  //     refetch();
+  //     console.log("New member added.");
+  //   }
+  //   setPreviousData(data);
+  // }, [data, previousData, refetch]);
 
-  componentDidMount() {
-    this.fetchMembers();
-  }
-
-  render() {
-    const { loading, error, members } = this.state;
-
-    if (loading) return <Loading />;
-    if (error) return <Text>Error: {error}</Text>;
-
+  if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.card1}>
-          {members.map((member) => (
-            <View key={member.id} style={styles.card}>
-              <Text
-                style={{ fontWeight: "bold", fontSize: 14, color: "#4E252B" }}
-              >
-                {member.email}
-              </Text>
-              <Text style={{ fontWeight: "bold", fontSize: 12, color: "grey" }}>
-                {member.password}
-              </Text>
-            </View>
-          ))}
-          <View style={styles.icon}>
-            <FontAwesome name="trash" size={20} color="red" />
-          </View>
-          <View style={styles.icon}>
-            <FontAwesome name="gear" size={20} color="green" />
-          </View>
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <Text style={styles.infoText}>Loading Data...</Text>
+      </View>
     );
   }
-}
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.infoText}>Error: {error.message}</Text>
+      </View>
+    );
+  }
+
+  const handleDelete = (id) => {
+    deleteMemberById({
+      variables: { id },
+    }).then(() => {
+      refetch(); 
+    }).catch((error) => {
+      console.error("Error deleting member:", error);
+    });
+  };
+
+  const handleUpdate = (member) => {
+    setSelectedMember(member);
+    setUpdateModalVisible(true);
+  };
+
+  const memberData = data.getAllMembers;
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={memberData}
+        renderItem={({ item }) => (
+          <SafeAreaView style={styles.container}>
+            <View style={styles.card1}>
+              <View style={styles.card}>
+                <Text
+                  style={{ fontWeight: "bold", fontSize: 14, color: "white" }}
+                >
+                  Email: {item.email}
+                </Text>
+                <Text
+                  style={{ fontWeight: "bold", fontSize: 12, color: "grey" }}
+                >
+                  Password: {item.password}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.icon}
+                onPress={() => handleDelete(item.id)}
+              >
+                <FontAwesome name="trash" size={20} color="red" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.icon}
+                onPress={() => handleUpdate(item)}
+              >
+                <FontAwesome name="gear" size={20} color="green" />
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        )}
+        keyExtractor={(item) => item.id.toString()}
+      />
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isUpdateModalVisible}
+        onRequestClose={() => setUpdateModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <UpdateForm
+              selectedMember={selectedMember}
+              onClose={() => setUpdateModalVisible(false)}
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E2DCE8",
     alignItems: "center",
-    paddingTop: 15,
+    paddingTop: 10,
   },
   card1: {
     flexDirection: "row",
@@ -92,15 +142,31 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 5,
     paddingHorizontal: 10,
-    shadowColor: "black",
+    backgroundColor: "#2E321F",
   },
   icon: {
-    flex: 1,
     justifyContent: "center",
-    width: 40,
+    width: 30,
   },
   card: {
-    width: 245,
+    flex: 1,
     justifyContent: "center",
   },
+  list: {
+    backgroundColor: "#E2DCE8",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    padding: 20,
+    borderRadius: 10,
+    height: 300,
+    width: "80%",
+  },
 });
+
+export default MemberScreen;
